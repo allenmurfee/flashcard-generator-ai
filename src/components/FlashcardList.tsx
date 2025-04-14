@@ -1,5 +1,6 @@
 import React from "react";
-import { Row, Col, Card } from "react-bootstrap";
+import { Row, Col, Card, Button } from "react-bootstrap";
+import { flashcardService } from "@/services/flashcardService";
 
 interface Flashcard {
   id: string;
@@ -11,10 +12,25 @@ interface Flashcard {
 
 interface FlashcardListProps {
   flashcards: Flashcard[];
+  onDelete?: (id: string) => void;
 }
 
-export const FlashcardList: React.FC<FlashcardListProps> = ({ flashcards }) => {
+export const FlashcardList: React.FC<FlashcardListProps> = ({
+  flashcards,
+  onDelete,
+}) => {
   if (flashcards.length === 0) return null;
+
+  const handleDelete = async (id: string) => {
+    try {
+      await flashcardService.deleteFlashcard(id);
+      if (onDelete) {
+        onDelete(id);
+      }
+    } catch (error) {
+      console.error("Error deleting flashcard:", error);
+    }
+  };
 
   return (
     <>
@@ -27,10 +43,20 @@ export const FlashcardList: React.FC<FlashcardListProps> = ({ flashcards }) => {
           <Col key={card.id} md={6}>
             <Card className="h-100 shadow-sm">
               <Card.Body>
-                <Card.Title className="h4 text-primary">
-                  <i className="bi-question-circle-fill text-primary me-2"></i>
-                  Question {index + 1}
-                </Card.Title>
+                <div className="d-flex justify-content-between align-items-start mb-3">
+                  <Card.Title className="h4 text-primary mb-0">
+                    <i className="bi-question-circle-fill text-primary me-2"></i>
+                    Question {index + 1}
+                  </Card.Title>
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={() => handleDelete(card.id)}
+                    className="ms-2"
+                  >
+                    <i className="bi-trash-fill"></i>
+                  </Button>
+                </div>
                 <Card.Text className="mb-4">{card.front}</Card.Text>
                 <Card.Title className="h4 text-success">
                   <i className="bi-lightbulb-fill text-success me-2"></i>

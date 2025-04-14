@@ -1,15 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Container, Row, Col } from "react-bootstrap";
-import "bootstrap-icons/font/bootstrap-icons.css";
+import { Container } from "react-bootstrap";
 import { Header } from "@/components/Header";
 import { NotesInput } from "@/components/NotesInput";
-import { FlashcardList } from "@/components/FlashcardList";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { FlashcardList } from "@/components/FlashcardList";
 import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState } from "react";
+import { flashcardService } from "@/services/flashcardService";
 import LoginScreen from "@/components/LoginScreen";
-import { supabase } from "@/lib/supabase";
 
 interface Flashcard {
   id: string;
@@ -26,70 +25,26 @@ export default function Home() {
 
   useEffect(() => {
     if (user) {
-      fetchFlashcards();
+      loadFlashcards();
     }
   }, [user]);
 
-  const fetchFlashcards = async () => {
+  const loadFlashcards = async () => {
     try {
-      const { data, error } = await supabase
-        .from("flashcards")
-        .select("*")
-        .eq("user_id", user?.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setFlashcards(data || []);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to fetch flashcards"
+      const userFlashcards = await flashcardService.getUserFlashcards(
+        user?.id || ""
       );
+      setFlashcards(userFlashcards);
+    } catch (err) {
+      setError("Failed to load flashcards");
+      console.error(err);
     }
   };
 
-  const handleGenerateFlashcards = async (notes: string) => {
-    try {
-      const response = await fetch("/api/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ notes }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to generate flashcards");
-      }
-
-      if (!data.flashcards || !Array.isArray(data.flashcards)) {
-        throw new Error("Invalid response format from API");
-      }
-
-      const newFlashcards = data.flashcards.map(
-        (card: { question: string; answer: string }) => ({
-          user_id: user?.id,
-          front: card.question,
-          back: card.answer,
-          created_at: new Date().toISOString(),
-        })
-      );
-
-      // Save to Supabase
-      const { error } = await supabase.from("flashcards").insert(newFlashcards);
-
-      if (error) throw error;
-
-      // Update local state
-      setFlashcards([...newFlashcards, ...flashcards]);
-    } catch (err) {
-      console.error("Error details:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to generate flashcards"
-      );
-      throw err;
-    }
+  const handleDelete = (deletedId: string) => {
+    setFlashcards((currentFlashcards) =>
+      currentFlashcards.filter((card) => card.id !== deletedId)
+    );
   };
 
   if (authLoading) {
@@ -109,13 +64,15 @@ export default function Home() {
   return (
     <Container className="py-5">
       <Header onLogout={signOut} />
-      <Row className="mb-5">
-        <Col md={{ span: 8, offset: 2 }}>
-          <NotesInput onGenerateClick={handleGenerateFlashcards} />
-        </Col>
-      </Row>
+      <div className="row justify-content-center">
+        <div className="col-md-8">
+          <div className="mt-4">
+            <NotesInput onSuccess={loadFlashcards} />
+          </div>
+        </div>
+      </div>
       <ErrorAlert error={error || ""} />
-      <FlashcardList flashcards={flashcards} />
+      <FlashcardList flashcards={flashcards} onDelete={handleDelete} />
     </Container>
   );
 }

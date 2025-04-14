@@ -1,96 +1,134 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(
+  process.env.NEXT_PUBLIC_GOOGLE_API_KEY || ""
+);
 
 export async function POST(request: Request) {
   try {
     const { notes } = await request.json();
-    console.log("Received notes length:", notes?.length);
+    console.log("Received notes:", notes);
 
     if (!notes) {
-      console.log("No notes provided");
       return NextResponse.json(
         { error: "Notes are required" },
         { status: 400 }
       );
     }
 
-    if (!process.env.OPENAI_API_KEY) {
-      console.error("OPENAI_API_KEY is not set");
+    if (!process.env.NEXT_PUBLIC_GOOGLE_API_KEY) {
       return NextResponse.json(
-        { error: "OpenAI API key is not configured" },
+        { error: "Google API key is not configured" },
         { status: 500 }
       );
     }
 
-    console.log("Making OpenAI API call...");
-    const prompt = `Create 5 flashcards from the following lecture notes. For each flashcard, provide a question and a detailed answer. Format the response as a JSON array of objects with 'question' and 'answer' properties. Notes: ${notes}`;
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a helpful study assistant that creates effective flashcards from lecture notes. Create clear, concise questions and detailed answers that cover the key concepts. Always return a valid JSON array of objects with 'question' and 'answer' properties.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
+    // Get the Gemini model with correct configuration
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-pro",
+      generationConfig: {
+        temperature: 0.3,
+        topP: 0.8,
+        topK: 40,
+      },
     });
 
-    console.log("OpenAI API call completed");
-    const content = completion.choices[0].message.content;
-    if (!content) {
-      console.error("No content in OpenAI response");
-      throw new Error("No content received from OpenAI");
+    const prompt = `Create exactly 3 flashcards from these notes. Each flashcard should have a clear question and answer.
+    Return ONLY a valid JSON array in this exact format:
+    [
+      {"question": "What is...", "answer": "It is..."},
+      {"question": "What is...", "answer": "It is..."},
+      {"question": "What is...", "answer": "It is..."}
+    ]
+    
+    Notes: ${notes.substring(0, 500)}`;
+
+    console.log("Sending prompt to Gemini:", prompt);
+
+    let result;
+    try {
+      result = await model.generateContent(prompt);
+      console.log("Got result from Gemini");
+    } catch (apiError: unknown) {
+      console.error("Gemini API error:", apiError);
+      const errorMessage =
+        apiError instanceof Error ? apiError.message : "Unknown API error";
+      return NextResponse.json(
+        {
+          error: "Failed to generate flashcards",
+          details: `API Error: ${errorMessage}`,
+          type: "api_error",
+        },
+        { status: 500 }
+      );
     }
 
-    console.log("OpenAI response content:", content);
+    const response = await result.response;
+    const text = response.text();
+    console.log("Raw Gemini response:", text);
+    console.log("Response type:", typeof text);
+    console.log("Response length:", text.length);
 
-    // Parse the JSON response
+    // Try to parse the JSON response
     let flashcards;
     try {
-      flashcards = JSON.parse(content);
-      console.log("Successfully parsed flashcards:", flashcards.length);
-    } catch (parseError) {
-      console.error("Failed to parse OpenAI response:", content);
-      throw new Error("Invalid response format from OpenAI");
-    }
+      // First, try to find the JSON array in the response
+      const jsonMatch = text.match(/\[[\s\S]*\{[\s\S]*\}[\s\S]*\]/);
+      console.log("JSON match result:", jsonMatch ? "Found" : "Not found");
 
-    if (!Array.isArray(flashcards)) {
-      console.error("Flashcards is not an array:", flashcards);
-      throw new Error("OpenAI response is not an array");
-    }
+      if (jsonMatch) {
+        console.log("Found JSON array in response");
+        flashcards = JSON.parse(jsonMatch[0]);
+      } else {
+        console.log("No JSON array found, trying to parse entire response");
+        flashcards = JSON.parse(text);
+      }
 
-    // Validate each flashcard has the required properties
-    const validFlashcards = flashcards.every(
-      (card) => card.question && card.answer
-    );
-    if (!validFlashcards) {
-      console.error("Invalid flashcard format:", flashcards);
-      throw new Error("Invalid flashcard format in OpenAI response");
+      // Validate the flashcards structure
+      if (!Array.isArray(flashcards) || flashcards.length !== 3) {
+        throw new Error("Invalid number of flashcards");
+      }
+
+      for (const card of flashcards) {
+        if (!card.question || !card.answer) {
+          throw new Error("Invalid flashcard format");
+        }
+      }
+
+      console.log(
+        "Successfully parsed flashcards:",
+        JSON.stringify(flashcards, null, 2)
+      );
+    } catch (parseError: unknown) {
+      console.error("Failed to parse response:", text);
+      console.error("Parse error details:", parseError);
+      const errorMessage =
+        parseError instanceof Error
+          ? parseError.message
+          : "Unknown parsing error";
+      return NextResponse.json(
+        {
+          error: "Failed to parse flashcards",
+          details: `Parsing Error: ${errorMessage}`,
+          rawResponse: text,
+          type: "parse_error",
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ flashcards });
-  } catch (error) {
-    console.error("Error generating flashcards:", error);
-    if (error instanceof Error) {
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
-    }
+  } catch (error: unknown) {
+    console.error("Unexpected error:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "An unexpected error occurred";
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to generate flashcards",
+        error: "An unexpected error occurred",
+        details: errorMessage,
+        type: "unexpected_error",
       },
       { status: 500 }
     );
