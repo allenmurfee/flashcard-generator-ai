@@ -14,6 +14,9 @@ import {
   AcademicCapIcon,
   BookOpenIcon,
   LightBulbIcon,
+  PencilIcon,
+  ClipboardDocumentListIcon,
+  BookmarkIcon,
 } from "@heroicons/react/24/outline";
 
 export default function Home() {
@@ -57,50 +60,90 @@ export default function Home() {
   };
 
   return (
-    <Container>
+    <Container className="py-5">
       <Row className="text-center mb-5">
         <Col>
-          <h1 className="display-4 mb-3">
-            <AcademicCapIcon className="h-12 w-12 inline-block mr-2" />
-            Flashcard Generator AI
+          <h1 className="display-4 mb-4">
+            <span className="icon-wrapper me-2">
+              <AcademicCapIcon
+                className="h-12 w-12"
+                style={{ color: "var(--primary-color)" }}
+              />
+            </span>
+            Flashcard AI Generator
           </h1>
-          <p className="lead">
+          <p className="lead education-text">
+            <span className="icon-wrapper me-2">
+              <PencilIcon
+                className="h-5 w-5"
+                style={{ color: "var(--primary-color)" }}
+              />
+            </span>
             Transform your lecture notes into effective study flashcards
           </p>
         </Col>
       </Row>
 
-      <Row className="mb-4">
-        <Col>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>
-                <BookOpenIcon className="h-5 w-5 inline-block mr-2" />
-                Paste your lecture notes here
-              </Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={6}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Enter your lecture notes..."
-              />
-            </Form.Group>
-            <Button
-              variant="primary"
-              onClick={generateFlashcards}
-              disabled={loading}
-            >
-              {loading ? "Generating..." : "Generate Flashcards"}
-            </Button>
-          </Form>
+      <Row className="mb-5">
+        <Col md={{ span: 8, offset: 2 }}>
+          <Card className="shadow-sm">
+            <Card.Body>
+              <Form>
+                <Form.Group className="mb-4">
+                  <Form.Label className="h5">
+                    <span className="icon-wrapper me-2">
+                      <BookOpenIcon
+                        className="h-5 w-5"
+                        style={{ color: "var(--primary-color)" }}
+                      />
+                    </span>
+                    Paste your lecture notes here
+                  </Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={8}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Enter your lecture notes..."
+                    className="border-2"
+                  />
+                </Form.Group>
+                <div className="text-center">
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    onClick={generateFlashcards}
+                    disabled={loading}
+                    className="px-5"
+                  >
+                    <span className="icon-wrapper me-2">
+                      {loading ? (
+                        <ClipboardDocumentListIcon
+                          className="h-5 w-5"
+                          style={{ color: "white" }}
+                        />
+                      ) : (
+                        <BookmarkIcon
+                          className="h-5 w-5"
+                          style={{ color: "white" }}
+                        />
+                      )}
+                    </span>
+                    {loading ? "Generating..." : "Generate Flashcards"}
+                  </Button>
+                </div>
+              </Form>
+            </Card.Body>
+          </Card>
         </Col>
       </Row>
 
       {error && (
         <Row className="mb-4">
-          <Col>
-            <Alert variant="danger">{error}</Alert>
+          <Col md={{ span: 8, offset: 2 }}>
+            <Alert variant="danger" className="shadow-sm">
+              {error}
+            </Alert>
           </Col>
         </Row>
       )}
@@ -108,24 +151,45 @@ export default function Home() {
       {flashcards.length > 0 && (
         <Row>
           <Col>
-            <h2 className="mb-4">
-              <LightBulbIcon className="h-6 w-6 inline-block mr-2" />
+            <h2 className="text-center mb-5">
+              <span className="icon-wrapper me-2">
+                <LightBulbIcon
+                  className="h-6 w-6"
+                  style={{ color: "var(--primary-color)" }}
+                />
+              </span>
               Your Flashcards
             </h2>
-            <div className="row row-cols-1 row-cols-md-2 g-4">
+            <Row className="g-4">
               {flashcards.map((card, index) => (
-                <Col key={index}>
-                  <Card className="h-100">
+                <Col key={index} md={6}>
+                  <Card className="h-100 shadow-sm">
                     <Card.Body>
-                      <Card.Title>Question {index + 1}</Card.Title>
-                      <Card.Text className="mb-3">{card.question}</Card.Text>
-                      <Card.Title>Answer</Card.Title>
+                      <Card.Title className="h4 text-primary">
+                        <span className="icon-wrapper me-2">
+                          <PencilIcon
+                            className="h-5 w-5"
+                            style={{ color: "var(--primary-color)" }}
+                          />
+                        </span>
+                        Question {index + 1}
+                      </Card.Title>
+                      <Card.Text className="mb-4">{card.question}</Card.Text>
+                      <Card.Title className="h4 text-success">
+                        <span className="icon-wrapper me-2">
+                          <LightBulbIcon
+                            className="h-5 w-5"
+                            style={{ color: "var(--success)" }}
+                          />
+                        </span>
+                        Answer
+                      </Card.Title>
                       <Card.Text>{card.answer}</Card.Text>
                     </Card.Body>
                   </Card>
                 </Col>
               ))}
-            </div>
+            </Row>
           </Col>
         </Row>
       )}

@@ -1,21 +1,24 @@
-@import "tailwindcss";
-
 :root {
   --background: #ffffff;
   --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --primary-color: #0d6efd;
+  --secondary-color: #2c689c;
+  --form-label-color: #495057;
+  --textarea-bg: #ffffff;
+  --textarea-border: #ced4da;
+  --success: #198754;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #1a1a1a;
+    --foreground: #f8f9fa;
+    --primary-color: #0d6efd;
+    --secondary-color: #adb5bd;
+    --form-label-color: #e9ecef;
+    --textarea-bg: #2d2d2d;
+    --textarea-border: #495057;
+    --success: #20c997;
   }
 }
 
@@ -23,4 +26,82 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Custom styles for flashcard cards */
+.card {
+  transition: transform 0.2s ease-in-out;
+  border: none;
+  background-color: var(--background);
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Custom styles for the textarea */
+textarea.form-control {
+  min-height: 200px;
+  resize: vertical;
+  background-color: var(--textarea-bg);
+  color: var(--foreground);
+  border: 2px solid var(--textarea-border);
+}
+
+textarea.form-control:focus {
+  background-color: var(--textarea-bg);
+  color: var(--foreground);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+textarea.form-control::placeholder {
+  color: var(--secondary-color);
+}
+
+/* Form label styles */
+.form-label {
+  color: var(--form-label-color);
+  font-weight: 500;
+}
+
+/* Custom styles for icons */
+.icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.icon-wrapper svg {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Educational theme styles */
+.education-text {
+  color: var(--secondary-color);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* Card title styles */
+.card-title {
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+/* Button styles */
+.btn-primary {
+  background-color: var(--primary-color);
+  border: none;
+  padding: 0.75rem 2rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: #0b5ed7;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
 }
