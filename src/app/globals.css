@@ -66,18 +66,6 @@ textarea.form-control::placeholder {
   font-weight: 500;
 }
 
-/* Custom styles for icons */
-.icon-wrapper {
-  display: inline-flex;
-  align-items: center;
-  vertical-align: middle;
-}
-
-.icon-wrapper svg {
-  display: inline-block;
-  vertical-align: middle;
-}
-
 /* Educational theme styles */
 .education-text {
   color: var(--secondary-color);

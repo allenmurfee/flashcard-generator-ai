@@ -6,7 +6,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Flashcard Generator AI",
+  title: "Flashcard AI Generator",
   description: "Generate flashcards from your lecture notes using AI",
 };
 
